@@ -22,6 +22,51 @@ const OK_RESPONSE: &str = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n
 const NOT_FOUND: &str = "HTTP/1.1 404 NOT FOUND\r\n\r\n";
 const INTERNAL_ERROR: &str = "HTTP/1.1 500 INTERNAL ERROR\r\n\r\n";
 
+//main function
+fn main(){
+    if let Err(_) = set_database(){
+        println!("Error setting database");
+        return;
+    }
+    let listener = TcpListener::bind(format!("0.0.0.0:8080")).unwrap();
+    println!("Server listening on port 8080");
+
+    for stream in listener.incoming() {}
+        match stream {
+            Ok(stream)=>{
+                handle_client(stream);
+            }
+            Err(e)=> {
+                println!("Unable to connect :{}",e)
+            }
+        }
+}
+
+// db setup
+fn set_database() -> Result<(),PostgresError> {
+    let mut client = Client::connect(DB_URL, NoTls)?;
+    client.batch_execute(
+        "
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR NOT NULL,
+            email VARCHAR NOT NULL
+        )
+    "
+    )?;
+    Ok(())
+}
+
+//Get id from request URL
+fn get_id(request: &str) -> &str {
+    request.split("/").nth(2).unwrap_or_default().split_whitespace().next().unwrap_or_default()
+}
+
+//deserialize user from request body without id
+fn get_user_request_body(request: &str) -> Result<User, serde_json::Error> {
+    serde_json::from_str(request.split("\r\n\r\n").last().unwrap_or_default())
+}
+
 fn handle_client(mut stream:TcpStream) {
     let mut buffer = [0; 1024];
     let mut request = String::new();
