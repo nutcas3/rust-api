@@ -1,9 +1,9 @@
 version: '3.9'
 
 services:
-  rustapp:
-    container_name: rustapp
-    image: francescoxx/rustapp:1.0.0
+  rustappserver:
+    container_name: rustappserver
+    image: nutcas3/rustapp:1.0.0
     build:
       context: .
       dockerfile: Dockerfile
